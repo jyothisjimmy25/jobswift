@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - Recruiter Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .analytics-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: none;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        
+        .analytics-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .stat-card {
+            border-left: 4px solid var(--primary-color);
+            padding: 1.25rem;
+        }
+        
+        .stat-card-primary {
+            border-left-color: var(--primary-color);
+        }
+        
+        .stat-card-success {
+            border-left-color: var(--success-color);
+        }
+        
+        .stat-card-warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .stat-card-danger {
+            border-left-color: var(--danger-color);
+        }
+        
+        .skill-badge {
+            font-size: 0.85rem;
+            padding: 0.5em 0.75em;
+            margin: 0.25em;
+            display: inline-block;
+        }
+        
+        .experience-level {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .progress-thin {
+            height: 8px;
+        }
+        
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('recruiter_dashboard') }}">Jobswift</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_dashboard') }}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_postings') }}">
+                            <i class="bi bi-file-earmark-post me-1"></i> Job Postings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_notifications') }}">
+                            <i class="bi bi-bell me-1"></i> Notifications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('recruiter_analytics') }}">
+                            <i class="bi bi-graph-up me-1"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_profile') }}">
+                            <i class="bi bi-person me-1"></i> Profile
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name={{ session['name']|urlencode }}&background=random&color=fff" 
+                                 class="rounded-circle me-2" width="32" height="32" alt="Profile">
+                            <span>{{ session['name'] }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold">Recruiter Analytics</h2>
+                <p class="text-muted">Performance metrics and candidate insights</p>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="row mb-4 g-4">
+            <div class="col-md-3">
+                <div class="card stat-card stat-card-primary">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Jobs Posted</h5>
+                        <h2 class="mb-0 fw-bold">{{ analytics.jobs_posted if analytics else 0 }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card stat-card-success">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Applications</h5>
+                        <h2 class="mb-0 fw-bold">{{ analytics.total_applications if analytics else 0 }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card stat-card-warning">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Acceptance Rate</h5>
+                        <h2 class="mb-0 fw-bold">
+                            {% if analytics and analytics.total_applications > 0 %}
+                                {{ ((analytics.applications_accepted / analytics.total_applications) * 100)|round(1) }}%
+                            {% else %}0%{% endif %}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card stat-card-danger">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Rejection Rate</h5>
+                        <h2 class="mb-0 fw-bold">
+                            {% if analytics and analytics.total_applications > 0 %}
+                                {{ ((analytics.applications_rejected / analytics.total_applications) * 100)|round(1) }}%
+                            {% else %}0%{% endif %}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4 g-4">
+            <!-- Application Status Chart -->
+            <div class="col-lg-6">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Application Status Distribution</h5>
+                        <div class="chart-container">
+                            <canvas id="applicationStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Acceptance Rate Over Time -->
+            <div class="col-lg-6">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Acceptance Rate Trend</h5>
+                        <div class="chart-container">
+                            <canvas id="acceptanceRateChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Post Performance -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Job Post Performance</h5>
+                        {% if analytics.job_performance and analytics.job_performance|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Job Position</th>
+                                        <th>Applications</th>
+                                        <th>Accepted</th>
+                                        <th>Rejected</th>
+                                        <th>Acceptance Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in analytics.job_performance %}
+                                    <tr>
+                                        <td>{{ job.position }}</td>
+                                        <td>{{ job.applications }}</td>
+                                        <td class="text-success">{{ job.accepted }}</td>
+                                        <td class="text-danger">{{ job.rejected }}</td>
+                                        <td>
+                                            {% if job.applications > 0 %}
+                                                {{ ((job.accepted / job.applications) * 100)|round(1) }}%
+                                            {% else %}0%{% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-graph-up empty-state-icon"></i>
+                            <h5 class="mb-3">No job performance data yet</h5>
+                            <p class="text-muted">Performance metrics will appear when you receive applications</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Candidate Insights -->
+        <div class="row g-4">
+            <!-- Top Skills -->
+            <div class="col-lg-6">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top Skills Among Applicants</h5>
+                        {% if top_skills and top_skills|length > 0 %}
+                        <div class="d-flex flex-wrap">
+                            {% for skill in top_skills %}
+                            <span class="badge bg-primary skill-badge">
+                                {{ skill.skill }} ({{ skill.count }})
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-tags empty-state-icon"></i>
+                            <h5 class="mb-3">No skill data yet</h5>
+                            <p class="text-muted">Skill information will appear when applicants provide their profiles</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Experience Levels -->
+            <div class="col-lg-6">
+                <div class="card analytics-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Applicant Experience Levels</h5>
+                        {% if experience_levels and experience_levels|length > 0 %}
+                        <div>
+                            {% for level in experience_levels %}
+                            <div class="experience-level">
+                                <span class="me-3" style="width: 120px;">{{ level.experience }}</span>
+                                <div class="flex-grow-1">
+                                    <div class="progress progress-thin">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: {{ (level.count / max_experience_count) * 100 }}%" 
+                                             aria-valuenow="{{ level.count }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="{{ max_experience_count }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="ms-3">{{ level.count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-person-lines-fill empty-state-icon"></i>
+                            <h5 class="mb-3">No experience data yet</h5>
+                            <p class="text-muted">Experience information will appear when applicants provide their profiles</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-dismiss flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+            
+            // Application Status Chart
+            const statusCtx = document.getElementById('applicationStatusChart');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Accepted', 'Pending', 'Rejected'],
+                        datasets: [{
+                            data: [
+                                {{ analytics.applications_accepted if analytics else 0 }},
+                                {{ (analytics.total_applications - analytics.applications_accepted - analytics.applications_rejected) if analytics else 0 }},
+                                {{ analytics.applications_rejected if analytics else 0 }}
+                            ],
+                            backgroundColor: [
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(220, 53, 69, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(40, 167, 69, 1)',
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(220, 53, 69, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Acceptance Rate Trend Chart (simplified - would use real time data in production)
+            const trendCtx = document.getElementById('acceptanceRateChart');
+            if (trendCtx) {
+                const acceptanceRate = {{ ((analytics.applications_accepted / analytics.total_applications) * 100)|round(1) if analytics and analytics.total_applications > 0 else 0 }};
+                
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                        datasets: [{
+                            label: 'Acceptance Rate %',
+                            data: [10, 25, 35, 40, 45, acceptanceRate - 5, acceptanceRate],
+                            fill: false,
+                            backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                            borderColor: 'rgba(13, 110, 253, 1)',
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y.toFixed(1) + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

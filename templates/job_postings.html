@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - Manage Job Postings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .job-card {
+            transition: all 0.3s;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .job-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .job-active {
+            border-left-color: var(--success-color);
+        }
+        
+        .job-expired {
+            border-left-color: var(--secondary-color);
+        }
+        
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+        }
+        
+        .applicant-count {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .applicant-pending {
+            color: var(--warning-color);
+        }
+        
+        .applicant-accepted {
+            color: var(--success-color);
+        }
+        
+        .applicant-rejected {
+            color: var(--danger-color);
+        }
+        
+        .filter-badge {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-badge:hover {
+            opacity: 0.8;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        .table th {
+            white-space: nowrap;
+        }
+        
+        .table td {
+            vertical-align: middle;
+        }
+        
+        .action-btn {
+            min-width: 100px;
+        }
+        
+        @media (max-width: 768px) {
+            .job-card {
+                margin-bottom: 20px;
+            }
+            
+            .action-btn {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('recruiter_dashboard') }}">Jobswift</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_dashboard') }}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('job_postings') }}">
+                            <i class="bi bi-file-earmark-post me-1"></i> Job Postings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_notifications') }}">
+                            <i class="bi bi-bell me-1"></i> Notifications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_analytics') }}">
+                            <i class="bi bi-graph-up me-1"></i> Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('recruiter_profile') }}">
+                            <i class="bi bi-person me-1"></i> Profile
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name={{ session['name']|urlencode }}&background=random&color=fff" 
+                                 class="rounded-circle me-2" width="32" height="32" alt="Profile">
+                            <span>{{ session['name'] }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold">Manage Job Postings</h2>
+                <p class="text-muted">Create and manage your job listings</p>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newJobModal">
+                    <i class="bi bi-plus-circle me-1"></i> New Job Post
+                </button>
+            </div>
+        </div>
+
+        <!-- Application Status Filters -->
+        <div class="row mb-3">
+            <div class="col">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="me-2">Filter by status:</span>
+                    <span class="badge bg-primary filter-badge" data-status="all">All</span>
+                    <span class="badge bg-warning text-dark filter-badge" data-status="active">Active</span>
+                    <span class="badge bg-secondary filter-badge" data-status="expired">Expired</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Postings Table -->
+        <div class="card">
+            <div class="card-body">
+                {% if jobs %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Position</th>
+                                <th>Posted</th>
+                                <th>Expires</th>
+                                <th>Status</th>
+                                <th>Applications</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs %}
+                            <tr class="job-card {% if job.is_expired %}job-expired{% else %}job-active{% endif %}" 
+                                data-status="{% if job.is_expired %}expired{% else %}active{% endif %}">
+                                <td>
+                                    <strong>{{ job.position }}</strong>
+                                    <div class="text-muted small">{{ job.location }} • {{ job.experience }}</div>
+                                </td>
+                                <td>{{ job.posted_at.strftime('%b %d, %Y') }}</td>
+                                <td>{{ job.expiry_date.strftime('%b %d, %Y') }}</td>
+                                <td>
+                                    {% if job.is_expired %}
+                                    <span class="badge bg-secondary status-badge">Expired</span>
+                                    {% else %}
+                                    <span class="badge bg-success status-badge">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set app_counts = job_applications.get(job.id, {'pending': 0, 'accepted': 0, 'rejected': 0}) %}
+                                    <div class="d-flex gap-3">
+                                        <span class="applicant-count applicant-pending" title="Pending">
+                                            <i class="bi bi-hourglass-split me-1"></i>{{ app_counts.pending }}
+                                        </span>
+                                        <span class="applicant-count applicant-accepted" title="Accepted">
+                                            <i class="bi bi-check-circle me-1"></i>{{ app_counts.accepted }}
+                                        </span>
+                                        <span class="applicant-count applicant-rejected" title="Rejected">
+                                            <i class="bi bi-x-circle me-1"></i>{{ app_counts.rejected }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="{{ url_for('job_applicants', job_id=job.id) }}" 
+                                           class="btn btn-sm btn-outline-primary action-btn">
+                                            <i class="bi bi-people me-1"></i> View Applicants
+                                        </a>
+                                        {% if job.is_expired %}
+                                        <form method="POST" action="{{ url_for('job_postings') }}" class="d-inline">
+                                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                                            <input type="hidden" name="status" value="active">
+                                            <button type="submit" class="btn btn-sm btn-outline-success action-btn">
+                                                <i class="bi bi-arrow-repeat me-1"></i> Reopen
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <form method="POST" action="{{ url_for('job_postings') }}" class="d-inline">
+                                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                                            <input type="hidden" name="status" value="expired">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary action-btn">
+                                                <i class="bi bi-archive me-1"></i> Archive
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('job_postings') }}" class="d-inline">
+                                            <input type="hidden" name="delete_id" value="{{ job.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger action-btn" 
+                                                    onclick="return confirm('Are you sure you want to delete this job posting?')">
+                                                <i class="bi bi-trash me-1"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-post fs-1 text-muted mb-3"></i>
+                    <h5 class="mb-3">No job postings yet</h5>
+                    <p class="text-muted mb-4">Create your first job posting to start receiving applications</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newJobModal">
+                        <i class="bi bi-plus-circle me-1"></i> Create Job Post
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- New Job Post Modal -->
+    <div class="modal fade" id="newJobModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Job Post</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('job_postings') }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Position Title</label>
+                            <input type="text" class="form-control" id="position" name="position" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Job Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="experience" class="form-label">Experience Level</label>
+                                <select class="form-select" id="experience" name="experience" required>
+                                    <option value="">Select...</option>
+                                    <option value="Entry Level">Entry Level</option>
+                                    <option value="Mid Level">Mid Level</option>
+                                    <option value="Senior Level">Senior Level</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="expiry_date" class="form-label">Expiry Date</label>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                            <div class="form-text">Job will automatically archive after this date</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Post Job</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-dismiss flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+            
+            // Job status filtering
+            const filterBadges = document.querySelectorAll('.filter-badge');
+            const jobRows = document.querySelectorAll('.job-card');
+            
+            filterBadges.forEach(badge => {
+                badge.addEventListener('click', function() {
+                    const status = this.getAttribute('data-status');
+                    
+                    // Update active filter badge
+                    filterBadges.forEach(b => b.classList.remove('bg-dark', 'text-white'));
+                    this.classList.add('bg-dark', 'text-white');
+                    
+                    // Filter job rows
+                    jobRows.forEach(row => {
+                        if (status === 'all' || row.getAttribute('data-status') === status) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+            
+            // Set default expiry date to 30 days from now
+            const expiryDateInput = document.getElementById('expiry_date');
+            if (expiryDateInput) {
+                const today = new Date();
+                const futureDate = new Date();
+                futureDate.setDate(today.getDate() + 30);
+                
+                const formattedDate = futureDate.toISOString().split('T')[0];
+                expiryDateInput.value = formattedDate;
+                expiryDateInput.min = today.toISOString().split('T')[0];
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - My Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .profile-header {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .profile-pic {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-control[readonly] {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            cursor: not-allowed;
+        }
+        
+        .section-card {
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .profile-complete-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+        
+        .skill-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .portfolio-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .portfolio-link:hover {
+            text-decoration: underline;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            background-color: transparent;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .resume-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .resume-section {
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .profile-pic {
+                width: 80px;
+                height: 80px;
+            }
+            .resume-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('jobseeker_dashboard') }}">Jobswift</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('jobseeker_dashboard') }}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_preferences') }}">
+                            <i class="bi bi-sliders me-1"></i> Job Preferences
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_listings') }}">
+                            <i class="bi bi-briefcase me-1"></i> Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('jobseeker_notifications') }}">
+                            <i class="bi bi-bell me-1"></i> Notifications
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name={{ session['name']|urlencode }}&background=random&color=fff" 
+                                 class="rounded-circle me-2" width="30" height="30" alt="Profile">
+                            <span>{{ session['name'] }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item active" href="{{ url_for('jobseeker_profile') }}">
+                                <i class="bi bi-person me-2"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_analytics') }}">
+                                <i class="bi bi-graph-up me-2"></i> Analytics
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Left Column - Profile Card -->
+            <div class="col-lg-4">
+                <div class="card section-card position-relative">
+                    <div class="card-body text-center py-4">
+                        <img src="https://ui-avatars.com/api/?name={{ user.name|urlencode }}&background=random&size=200" 
+                             class="profile-pic rounded-circle mb-3" alt="Profile Picture">
+                        <h4 class="mb-1">{{ user.name }}</h4>
+                        <p class="text-muted mb-3">{{ user.role|title }}</p>
+                        
+                        <span class="badge bg-{% if profile %}success{% else %}warning{% endif %} profile-complete-badge">
+                            {% if profile %}Complete{% else %}Incomplete{% endif %}
+                        </span>
+                        
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key me-1"></i> Change Password
+                            </button>
+                            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                <i class="bi bi-trash me-1"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="card section-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">Account Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Full Name</label>
+                            <input type="text" class="form-control" value="{{ user.name }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Age</label>
+                            <input type="text" class="form-control" value="{{ user.age }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Email</label>
+                            <input type="text" class="form-control" value="{{ user.email }}" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Profile Form -->
+            <div class="col-lg-8">
+                <div class="card section-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">Professional Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('jobseeker_profile') }}">
+                            <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="education-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#education" type="button" role="tab">
+                                        Education
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="experience-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#experience" type="button" role="tab">
+                                        Experience
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="skills-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#skills" type="button" role="tab">
+                                        Skills
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="portfolio-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#portfolio" type="button" role="tab">
+                                        Portfolio
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="profileTabsContent">
+                                <!-- Education Tab -->
+                                <div class="tab-pane fade show active" id="education" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="education" class="form-label">Education</label>
+                                        <textarea class="form-control" id="education" name="education" rows="5" 
+                                                  placeholder="List your degrees, certifications, and educational background">{{ profile.education if profile else '' }}</textarea>
+                                        <div class="form-text">Example: BSc in Computer Science - University of XYZ (2015-2019)</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Experience Tab -->
+                                <div class="tab-pane fade" id="experience" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="experience" class="form-label">Work Experience</label>
+                                        <textarea class="form-control" id="experience" name="experience" rows="8"
+                                                  placeholder="Describe your work history, positions held, and key responsibilities">{{ profile.experience if profile else '' }}</textarea>
+                                        <div class="form-text">Include job titles, companies, dates, and key achievements</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Skills Tab -->
+                                <div class="tab-pane fade" id="skills" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="skills" class="form-label">Skills</label>
+                                        <textarea class="form-control" id="skills" name="skills" rows="3"
+                                                  placeholder="List your key skills (comma separated)">{{ profile.skills if profile else '' }}</textarea>
+                                        <div class="form-text">Example: Python, Project Management, Data Analysis, JavaScript</div>
+                                        
+                                        {% if profile and profile.skills %}
+                                        <div class="mt-3">
+                                            <label class="form-label">Your Skills:</label>
+                                            <div>
+                                                {% for skill in profile.skills.split(',') %}
+                                                    <span class="skill-badge">{{ skill.strip() }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Portfolio Tab -->
+                                <div class="tab-pane fade" id="portfolio" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="portfolio_links" class="form-label">Portfolio Links</label>
+                                        <textarea class="form-control" id="portfolio_links" name="portfolio_links" rows="3"
+                                                  placeholder="Links to your portfolio, GitHub, LinkedIn, etc.">{{ profile.portfolio_links if profile else '' }}</textarea>
+                                        <div class="form-text">Separate multiple links with commas</div>
+                                        
+                                        {% if profile and profile.portfolio_links %}
+                                        <div class="mt-3">
+                                            <label class="form-label">Your Links:</label>
+                                            <div>
+                                                {% for link in profile.portfolio_links.split(',') %}
+                                                    <a href="{{ link.strip() }}" target="_blank" class="portfolio-link">
+                                                        <i class="bi bi-box-arrow-up-right me-1"></i>{{ link.strip() }}
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <i class="bi bi-save me-1"></i> Save Profile
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Resume Section - Corrected to work with dictionary -->
+                <div class="card section-card resume-section">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Resume Management</h5>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#resumeUploadModal">
+                            <i class="bi bi-upload me-1"></i> Upload New
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if preferences and preferences.resume_link %}
+                        <div class="alert alert-success d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle me-2"></i> 
+                                Resume uploaded: {{ preferences.resume_link.split('/')[-1] }}
+                                <a href="{{ url_for('static', filename=preferences.resume_link) }}" 
+                                   target="_blank" class="alert-link ms-2">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </a>
+                            </div>
+                            <form method="POST" action="{{ url_for('delete_resume') }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash me-1"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i> No resume uploaded yet. 
+                            Upload your resume to enable job applications.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> Your resume is used for all job applications. 
+                            Keep it updated with your latest information.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('change_password') }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="current_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="new_password" required>
+                            <div class="form-text">Minimum 8 characters with at least one number and one special character</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Delete Account</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('delete_account') }}" method="POST">
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i> 
+                            This action cannot be undone. All your data will be permanently deleted.
+                        </div>
+                        <div class="mb-3">
+                            <label for="deletePassword" class="form-label">Enter your password to confirm</label>
+                            <input type="password" class="form-control" id="deletePassword" name="password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete My Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resume Upload Modal -->
+    <div class="modal fade" id="resumeUploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Resume</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('upload_resume') }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="resumeFile" class="form-label">Select Resume File</label>
+                            <input class="form-control" type="file" id="resumeFile" name="resume" accept=".pdf,.doc,.docx" required>
+                            <div class="form-text">Allowed file types: PDF, DOC, DOCX. Max size: 2MB.</div>
+                        </div>
+                        {% if preferences and preferences.resume_link %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> 
+                            Uploading a new resume will replace your current one.
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload Resume</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize tab functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss flash messages
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+            
+            // Initialize tabs if they exist
+            const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabEls.forEach(tabEl => {
+                tabEl.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const tab = new bootstrap.Tab(this);
+                    tab.show();
+                });
+            });
+            
+            // Form validation for password change
+            const passwordForm = document.querySelector('#changePasswordModal form');
+            if (passwordForm) {
+                passwordForm.addEventListener('submit', function(e) {
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    if (newPassword !== confirmPassword) {
+                        e.preventDefault();
+                        alert('Passwords do not match!');
+                    }
+                });
+            }
+
+            // File size validation for resume upload
+            const resumeForm = document.querySelector('#resumeUploadModal form');
+            if (resumeForm) {
+                resumeForm.addEventListener('submit', function(e) {
+                    const fileInput = document.getElementById('resumeFile');
+                    if (fileInput.files.length > 0 && fileInput.files[0].size > 2 * 1024 * 1024) {
+                        e.preventDefault();
+                        alert('File size exceeds 2MB limit!');
+                    }
+                });
+            }
+
+            // Persist the resume section after upload
+            if (window.location.hash === '#resume-section') {
+                const resumeSection = document.querySelector('.resume-section');
+                if (resumeSection) {
+                    resumeSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

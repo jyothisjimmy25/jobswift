@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - Jobseeker Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 0.7rem;
+        }
+        
+        .application-status {
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .status-pending {
+            color: var(--warning-color);
+        }
+        
+        .status-accepted {
+            color: var(--success-color);
+        }
+        
+        .status-rejected {
+            color: var(--danger-color);
+        }
+        
+        .status-expired {
+            color: var(--secondary-color);
+        }
+        
+        .quick-action-btn {
+            text-align: left;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .quick-action-btn:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        
+        .profile-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        
+        .stat-card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .trend-up {
+            color: var(--success-color);
+        }
+        
+        .trend-down {
+            color: var(--danger-color);
+        }
+        
+        .trend-neutral {
+            color: var(--secondary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-card {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('jobseeker_dashboard') }}">Jobswift</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('jobseeker_dashboard') }}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_preferences') }}">
+                            <i class="bi bi-sliders me-1"></i> Job Preferences
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_listings') }}">
+                            <i class="bi bi-briefcase me-1"></i> Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_applications') }}">
+                            <i class="bi bi-file-earmark-text me-1"></i> My Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active position-relative" href="{{ url_for('jobseeker_analytics') }}">
+                            <i class="bi bi-graph-up me-1"></i> Analytics
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name={{ session['name']|urlencode }}&background=random&color=fff" 
+                                 class="profile-img me-2" alt="Profile">
+                            <span>{{ session['name'] }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_profile') }}">
+                                <i class="bi bi-person me-2"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_notifications') }}">
+                                <i class="bi bi-bell me-2"></i> Notifications
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold">Jobseeker Analytics</h2>
+                <p class="text-muted">Track your job search performance and insights</p>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row mb-4 g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card dashboard-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-3">Profile Views</h6>
+                                <h3 class="fw-bold mb-1">{{ analytics.profile_views if analytics else 0 }}</h3>
+                                <div class="trend-indicator {% if analytics and analytics.profile_views > 0 %}trend-up{% else %}trend-neutral{% endif %}">
+                                    <i class="bi bi-arrow-{% if analytics and analytics.profile_views > 0 %}up{% else %}right{% endif %}-circle-fill me-1"></i>
+                                    {% if analytics and analytics.profile_views > 0 %}Active{% else %}No views{% endif %}
+                                </div>
+                            </div>
+                            <div class="stat-card-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-eye-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="card dashboard-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-3">Applications</h6>
+                                <h3 class="fw-bold mb-1">{{ analytics.applications_submitted if analytics else 0 }}</h3>
+                                <div class="trend-indicator {% if analytics and analytics.applications_submitted > 0 %}trend-up{% else %}trend-neutral{% endif %}">
+                                    <i class="bi bi-arrow-{% if analytics and analytics.applications_submitted > 0 %}up{% else %}right{% endif %}-circle-fill me-1"></i>
+                                    {% if analytics and analytics.applications_submitted > 0 %}Active{% else %}No applications{% endif %}
+                                </div>
+                            </div>
+                            <div class="stat-card-icon bg-info bg-opacity-10 text-info">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="card dashboard-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-3">Success Rate</h6>
+                                <h3 class="fw-bold mb-1">
+                                    {% if analytics and analytics.applications_submitted > 0 %}
+                                    {{ ((analytics.applications_accepted / analytics.applications_submitted) * 100)|round(2) }}%
+                                    {% else %}0%{% endif %}
+                                </h3>
+                                <div class="trend-indicator {% if analytics and analytics.applications_accepted > 0 %}trend-up{% else %}trend-neutral{% endif %}">
+                                    <i class="bi bi-arrow-{% if analytics and analytics.applications_accepted > 0 %}up{% else %}right{% endif %}-circle-fill me-1"></i>
+                                    {% if analytics and analytics.applications_accepted > 0 %}Positive{% else %}No acceptances{% endif %}
+                                </div>
+                            </div>
+                            <div class="stat-card-icon bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="card dashboard-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-3">Auto-Apply Success</h6>
+                                <h3 class="fw-bold mb-1">
+                                    {% if analytics and analytics.auto_apply_success_rate > 0 %}
+                                    {{ analytics.auto_apply_success_rate|round(2) }}%
+                                    {% else %}0%{% endif %}
+                                </h3>
+                                <div class="trend-indicator {% if analytics and analytics.auto_apply_success_rate > 0 %}trend-up{% else %}trend-neutral{% endif %}">
+                                    <i class="bi bi-arrow-{% if analytics and analytics.auto_apply_success_rate > 0 %}up{% else %}right{% endif %}-circle-fill me-1"></i>
+                                    {% if analytics and analytics.auto_apply_success_rate > 0 %}Active{% else %}No auto-applies{% endif %}
+                                </div>
+                            </div>
+                            <div class="stat-card-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="card dashboard-card h-100">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">Application Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="applicationStatusChart"></canvas>
+                        </div>
+                        <div class="row text-center mt-3">
+                            <div class="col-4">
+                                <h5 class="fw-bold">{{ analytics.applications_accepted if analytics else 0 }}</h5>
+                                <span class="badge bg-success">Accepted</span>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="fw-bold">{{ analytics.applications_rejected if analytics else 0 }}</h5>
+                                <span class="badge bg-danger">Rejected</span>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="fw-bold">
+                                    {% if analytics %}
+                                    {{ analytics.applications_submitted - (analytics.applications_accepted + analytics.applications_rejected) }}
+                                    {% else %}0{% endif %}
+                                </h5>
+                                <span class="badge bg-warning">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card dashboard-card h-100">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">Profile Views Trend</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="profileViewsChart"></canvas>
+                        </div>
+                        <div class="text-center mt-3">
+                            <p class="mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Shows recruiter views of your profile over time
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Market Trends -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">Job Market Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start mb-4">
+                                    <div class="me-3">
+                                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-graph-up-arrow text-primary fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">In-Demand Skills</h6>
+                                        <p class="text-muted mb-0">Python, JavaScript, Cloud Computing</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start mb-4">
+                                    <div class="me-3">
+                                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-currency-dollar text-success fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Salary Trends</h6>
+                                        <p class="text-muted mb-0">10-15% increase for remote roles</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start mb-4">
+                                    <div class="me-3">
+                                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+                                            <i class="bi bi-building text-info fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Hiring Locations</h6>
+                                        <p class="text-muted mb-0">Remote opportunities up 25%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Pro Tip:</strong> Based on your skills and preferences, we recommend focusing on 
+                            remote Python development roles where demand is highest.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script>
+        // Auto-dismiss flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+            
+            // Application Status Chart
+            const statusCtx = document.getElementById('applicationStatusChart').getContext('2d');
+            const statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Accepted', 'Rejected', 'Pending'],
+                    datasets: [{
+                        data: [
+                            {{ analytics.applications_accepted if analytics else 0 }},
+                            {{ analytics.applications_rejected if analytics else 0 }},
+                            {% if analytics %}
+                            {{ analytics.applications_submitted - (analytics.applications_accepted + analytics.applications_rejected) }}
+                            {% else %}0{% endif %}
+                        ],
+                        backgroundColor: [
+                            '#28a745',
+                            '#dc3545',
+                            '#ffc107'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+            
+            // Profile Views Chart (sample data)
+            const viewsCtx = document.getElementById('profileViewsChart').getContext('2d');
+            const viewsChart = new Chart(viewsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Profile Views',
+                        data: [5, 8, 12, 6, 15, 20],
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderColor: '#0d6efd',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#0d6efd',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawBorder: false
+                            },
+                            ticks: {
+                                stepSize: 5
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - Job Listings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .job-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .job-card:hover {
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .job-card.expiring {
+            border-left-color: var(--warning-color);
+        }
+        
+        .job-card.expired {
+            border-left-color: var(--danger-color);
+            opacity: 0.7;
+        }
+        
+        .company-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 8px;
+            background-color: white;
+            padding: 5px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .badge-experience {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .profile-img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .filter-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .filter-section {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .job-type-badge {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        
+        .job-type-fulltime {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .job-type-parttime {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+        
+        .job-type-remote {
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 0.7rem;
+        }
+        
+        .description-preview {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .view-details-btn {
+            color: var(--primary-color);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .view-details-btn:hover {
+            text-decoration: underline;
+        }
+        
+        .job-description-content {
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('jobseeker_dashboard') }}">Jobswift</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('jobseeker_dashboard') }}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('job_preferences') }}">
+                            <i class="bi bi-sliders me-1"></i> Job Preferences
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('job_listings') }}">
+                            <i class="bi bi-briefcase me-1"></i> Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_applications') }}">
+                            <i class="bi bi-file-earmark-text me-1"></i> My Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{{ url_for('jobseeker_notifications') }}">
+                            <i class="bi bi-bell me-1"></i> Notifications
+                            {% if unread_notifications > 0 %}
+                            <span class="badge bg-danger notification-badge">{{ unread_notifications }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name={{ session['name']|urlencode }}&background=random&color=fff" 
+                                 class="profile-img me-2" alt="Profile">
+                            <span>{{ session['name'] }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_profile') }}">
+                                <i class="bi bi-person me-2"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('jobseeker_analytics') }}">
+                                <i class="bi bi-graph-up me-2"></i> Analytics
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold">Job Listings</h2>
+                <p class="text-muted">Browse and apply for available positions</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Filters Column -->
+            <div class="col-lg-3 mb-4">
+                <div class="card filter-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Filters</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="filterForm">
+                            <!-- Experience Filter -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Experience Level</h6>
+                                <div class="filter-section">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Entry Level" id="expEntry" name="experience">
+                                        <label class="form-check-label" for="expEntry">
+                                            Entry Level
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Mid Level" id="expMid" name="experience">
+                                        <label class="form-check-label" for="expMid">
+                                            Mid Level
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Senior Level" id="expSenior" name="experience">
+                                        <label class="form-check-label" for="expSenior">
+                                            Senior Level
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Executive" id="expExecutive" name="experience">
+                                        <label class="form-check-label" for="expExecutive">
+                                            Executive
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Location Filter -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Location</h6>
+                                <div class="filter-section">
+                                    {% set locations = [] %}
+                                    {% for job in jobs %}
+                                        {% if job.location not in locations %}
+                                            {% set _ = locations.append(job.location) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" value="{{ job.location }}" id="loc{{ loop.index }}" name="location">
+                                                <label class="form-check-label" for="loc{{ loop.index }}">
+                                                    {{ job.location }}
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Company Filter -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Company</h6>
+                                <div class="filter-section">
+                                    {% set companies = [] %}
+                                    {% for job in jobs %}
+                                        {% if job.company_name not in companies %}
+                                            {% set _ = companies.append(job.company_name) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" value="{{ job.company_name }}" id="comp{{ loop.index }}" name="company">
+                                                <label class="form-check-label" for="comp{{ loop.index }}">
+                                                    {{ job.company_name }}
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                                <button type="reset" class="btn btn-outline-secondary">Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Job Listings Column -->
+            <div class="col-lg-9">
+                {% if jobs %}
+                    {% for job in jobs %}
+                    <div class="card job-card mb-3 {% if job.expiry_date < today %}expired{% elif (job.expiry_date - today).days <= 3 %}expiring{% endif %}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <img src="https://ui-avatars.com/api/?name={{ job.company_name|urlencode }}&background=random" 
+                                             class="company-logo me-3" alt="{{ job.company_name }}">
+                                        <div>
+                                            <h4 class="mb-1">{{ job.position }}</h4>
+                                            <h5 class="text-muted mb-2">{{ job.company_name }}</h5>
+                                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                                <span class="badge badge-experience">
+                                                    <i class="bi bi-person-badge me-1"></i> {{ job.experience }}
+                                                </span>
+                                                <span class="badge badge-experience">
+                                                    <i class="bi bi-geo-alt me-1"></i> {{ job.location }}
+                                                </span>
+                                                <span class="badge badge-experience">
+                                                    <i class="bi bi-clock me-1"></i> Posted {{ job.posted_at.strftime('%b %d') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <p class="card-text description-preview">{{ job.description }}</p>
+                                        <a class="view-details-btn" data-bs-toggle="modal" data-bs-target="#jobDescriptionModal" 
+                                           data-description="{{ job.description }}" 
+                                           data-position="{{ job.position }}"
+                                           data-company="{{ job.company_name }}">
+                                            <i class="bi bi-eye me-1"></i> View Full Description
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 d-flex flex-column justify-content-between">
+                                    <div class="text-end mb-2">
+                                        <span class="job-type-badge job-type-fulltime">Full-time</span>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if job.expiry_date < today %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% elif job.id in applied_job_ids %}
+                                            <button class="btn btn-success btn-sm" disabled>
+                                                <i class="bi bi-check-circle me-1"></i> Applied
+                                            </button>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('apply_job', job_id=job.id) }}">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bi bi-send me-1"></i> Apply Now
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-briefcase fs-1 text-muted mb-3"></i>
+                            <h4 class="mb-3">No jobs found</h4>
+                            <p class="text-muted">Try adjusting your filters or check back later</p>
+                            <a href="{{ url_for('job_listings') }}" class="btn btn-primary">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Description Modal -->
+    <div class="modal fade" id="jobDescriptionModal" tabindex="-1" aria-labelledby="jobDescriptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="jobDescriptionModalLabel">Job Description</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4 id="modalJobPosition"></h4>
+                    <h5 class="text-muted mb-4" id="modalJobCompany"></h5>
+                    <div class="job-description-content" id="modalJobDescription"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-dismiss flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+            
+            // Filter form submission
+            const filterForm = document.getElementById('filterForm');
+            if (filterForm) {
+                filterForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    // In a real app, you would submit the form and filter jobs on the server
+                    // For this demo, we'll just show an alert
+                    alert('Filters would be applied here in a real implementation');
+                });
+            }
+
+            // Job description modal setup
+            const jobDescriptionModal = document.getElementById('jobDescriptionModal');
+            if (jobDescriptionModal) {
+                jobDescriptionModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+                    const description = button.getAttribute('data-description');
+                    const position = button.getAttribute('data-position');
+                    const company = button.getAttribute('data-company');
+                    
+                    document.getElementById('modalJobPosition').textContent = position;
+                    document.getElementById('modalJobCompany').textContent = company;
+                    document.getElementById('modalJobDescription').textContent = description;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

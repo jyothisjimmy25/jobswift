@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobswift - Sign Up</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 450px;
+            padding: 30px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .logo h1 {
+            color: #3a86ff;
+            margin: 0;
+            font-size: 28px;
+        }
+        .logo p {
+            color: #6c757d;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3a86ff;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+        }
+        .radio-group {
+            margin: 15px 0;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .radio-option input {
+            width: auto;
+            margin-right: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3a86ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2667cc;
+        }
+        .links {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .links a {
+            color: #3a86ff;
+            text-decoration: none;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        /* Flash message styles */
+        .flash-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        .flash-message {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.5s forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .flash-error {
+            background-color: #f44336;
+        }
+        .flash-success {
+            background-color: #4CAF50;
+        }
+        .flash-info {
+            background-color: #2196F3;
+        }
+        .flash-warning {
+            background-color: #ff9800;
+        }
+        .flash-close {
+            margin-left: 15px;
+            cursor: pointer;
+            font-size: 22px;
+            line-height: 20px;
+        }
+        .flash-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: rgba(255,255,255,0.5);
+            width: 100%;
+            transform: scaleX(1);
+            transform-origin: left;
+            animation: progressBar 5s linear forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes progressBar {
+            to { transform: scaleX(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash messages container -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}" onclick="this.remove()">
+                        {{ message }}
+                        <span class="flash-close">&times;</span>
+                        <div class="flash-progress"></div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <h1>Jobswift</h1>
+            <p>Create your account to get started</p>
+        </div>
+        
+        <form action="/signup" method="POST">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" id="age" name="age" min="18" max="100" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            
+            <div class="form-group">
+                <label>I am a:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="jobseeker" name="role" value="jobseeker" checked>
+                        <label for="jobseeker">Jobseeker</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="recruiter" name="role" value="recruiter">
+                        <label for="recruiter">Recruiter</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit">Create Account</button>
+        </form>
+        
+        <div class="links">
+            Already have an account? <a href="/login">Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-remove flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.flash-message');
+            
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.animation = 'slideIn 0.5s reverse forwards';
+                    setTimeout(() => message.remove(), 500);
+                }, 5000);
+                
+                // Click to dismiss
+                const closeBtn = message.querySelector('.flash-close');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        message.style.animation = 'slideIn 0.5s reverse forwards';
+                        setTimeout(() => message.remove(), 500);
+                    });
+                }
+            });
+
+            // Simple client-side validation
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+                
+                if (password !== confirmPassword) {
+                    // Just show alert but still allow form submission
+                    alert('Passwords do not match! Please check your input.');
+                    // Server will also validate and show flash message
+                }
+            });
+        });
+    </script>
+</body>
+</html>

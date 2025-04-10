@@ -1,0 +1,201 @@
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.content-wrapper {
+    max-width: 1200px;
+    width: 100%;
+    text-align: center;
+    padding: 2rem;
+}
+
+.main-heading {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #212529;
+}
+
+.main-heading span {
+    color: #0d6efd;
+}
+
+.lead-text {
+    font-size: 1.25rem;
+    color: #6c757d;
+    margin-bottom: 3rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Feature Cards */
+.features-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 2rem;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: #212529;
+}
+
+.feature-card p {
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-login, .btn-signup {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-login {
+    background-color: #0d6efd;
+    color: white;
+    border: 2px solid #0d6efd;
+}
+
+.btn-signup {
+    background-color: transparent;
+    color: #0d6efd;
+    border: 2px solid #0d6efd;
+}
+
+.btn-login:hover {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+    transform: translateY(-2px);
+}
+
+.btn-signup:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Footer */
+.main-footer {
+    background-color: #f1f3f5;
+    padding: 1.5rem 0;
+    width: 100%;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 0 1rem;
+}
+
+.footer-content p {
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.footer-links a {
+    color: #6c757d;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: #0d6efd;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .main-heading {
+        font-size: 2rem;
+    }
+    
+    .lead-text {
+        font-size: 1.1rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .content-wrapper {
+        padding: 1rem;
+    }
+    
+    .main-heading {
+        font-size: 1.75rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-login, .btn-signup {
+        width: 100%;
+        justify-content: center;
+    }
+}
